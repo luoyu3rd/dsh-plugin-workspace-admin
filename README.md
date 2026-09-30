@@ -52,8 +52,10 @@ use, so all surfaces converge on one registry at
 ```
 index.js                  plugin entry: name / inject / apply
 src/workspace-tools.js    the six raw ToolDefinition objects
-test/harness.mjs          offline assertions over a fake registry
+test/harness.mjs          offline assertions over a fake registry (not shipped)
 cordis.patch.yml          the bundle layer that mounts the row
+CHANGELOG.md              release history (Keep a Changelog + SemVer)
+LICENSE                   MIT
 ```
 
 Two deliberate design choices:
@@ -182,7 +184,7 @@ the repository to drift from what users run.
 ### To npm
 
 ```sh
-pnpm pack          # → dsh-plugin-workspace-admin-0.1.0.tgz (5 files, ~8 KB)
+pnpm pack          # → dsh-plugin-workspace-admin-0.1.0.tgz (8 files, ~15 KB)
 npm publish        # or: npm publish --access public, for a scoped name
 ```
 
@@ -222,4 +224,10 @@ node test/harness.mjs
 
 Runs the real tool definitions against an in-memory fake of the workspace
 registry: registration shape, output envelope, argument validation, idempotent
-create, directory creation, rename, delete, and re-add after delete.
+create, recursive directory creation, rename by id and by path, delete, re-add
+after delete, session listing, archived filtering, `limit` truncation, and
+per-session degradation.
+
+## License
+
+[MIT](LICENSE) © 2026 luoyu3rd

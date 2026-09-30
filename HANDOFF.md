@@ -17,13 +17,15 @@ immutable `cwd` in the session header (see "Hard constraints" below).
 | Location | `/Users/long/Projects/dsh-plugin-workspace-admin` |
 | Version | `0.1.0` (tag `v0.1.0`) |
 | Published | https://github.com/luoyu3rd/dsh-plugin-workspace-admin (public) |
-| Head | `387ce65` |
+| Head | `main`; last code change `387ce65` (tag `v0.1.0`) — run `git log --oneline -1` for the current tip |
 | Tool count | 6 |
 | Dependencies | none (no `dependencies`, no `peerDependencies`) |
 | Build step | none |
 | Registry | not published to npm |
 | Mounted in | the `desktop` profile, installed from GitHub |
 | Tests | `node test/harness.mjs` — all assertions pass |
+| License | MIT — `LICENSE`, © 2026 luoyu3rd |
+| Changelog | `CHANGELOG.md` (Keep a Changelog + SemVer) |
 
 ## What it is
 
@@ -255,14 +257,21 @@ truncation, and per-session degradation.
 
 ## Open items
 
-- **No `LICENSE` file** although `package.json` declares `"license": "MIT"`.
-  Add one before treating the repository as a finished public project.
 - **The app's dependency is unpinned.** The desktop profile records
   `github:luoyu3rd/dsh-plugin-workspace-admin`, which tracks the default branch.
   Pin a commit or tag for reproducibility.
 - **Not published to npm.** `npm publish` would make `dsh plugin add
   dsh-plugin-workspace-admin` work without a git host.
-- **No `docs/` or `CHANGELOG`.** Version history currently lives in git log.
+
+Resolved since the origin session: `LICENSE` (MIT) and `CHANGELOG.md` now exist,
+and `package.json` carries `author`, `repository`, `homepage`, and `bugs`.
+
+### A note on the Status table's `Head` row
+
+It used to hold a bare short hash, which went stale the moment the next commit
+landed — including the commit that added this very file. A commit cannot record
+its own hash, so the row now names the last **code** change and defers the tip to
+`git log`. Keep it that way; do not start chasing the current hash again.
 
 ## Working agreement for the next session
 
@@ -275,3 +284,5 @@ truncation, and per-session degradation.
 4. Keep the zero-bare-import property unless there is a concrete reason to give
    it up, and read the tradeoff above before doing so.
 5. Do not commit an absolute path into `cordis.patch.yml`.
+6. On any release: bump `version` in `package.json`, add a `CHANGELOG.md` entry,
+   then tag. The tag is what installs pin to.

@@ -8,7 +8,14 @@
     "deepseek-harness",
     "workspace"
   ],
+  "author": "luoyu3rd",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/luoyu3rd/dsh-plugin-workspace-admin.git"
+  },
+  "homepage": "https://github.com/luoyu3rd/dsh-plugin-workspace-admin#readme",
+  "bugs": "https://github.com/luoyu3rd/dsh-plugin-workspace-admin/issues",
   "type": "module",
   "main": "index.js",
   "exports": {
@@ -22,7 +29,9 @@
     "src/workspace-tools.js",
     "cordis.patch.yml",
     "README.md",
-    "HANDOFF.md"
+    "HANDOFF.md",
+    "CHANGELOG.md",
+    "LICENSE"
   ],
   "dsh": {
     "bundle": {
