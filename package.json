@@ -21,7 +21,8 @@
     "index.js",
     "src/workspace-tools.js",
     "cordis.patch.yml",
-    "README.md"
+    "README.md",
+    "HANDOFF.md"
   ],
   "dsh": {
     "bundle": {

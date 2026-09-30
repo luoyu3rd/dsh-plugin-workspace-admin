@@ -7,6 +7,10 @@ MVP scope is the sidebar's own workspace operations — **add**, **rename**,
 **delete** — plus read-only helpers for browsing workspaces and the sessions
 each one owns.
 
+> **[HANDOFF.md](HANDOFF.md)** carries the full design rationale, the exact tool
+> contracts, the Harness constraints discovered while building this, and the
+> open items. Read it before changing behaviour here.
+
 ## Tools
 
 | Tool | What it does |
