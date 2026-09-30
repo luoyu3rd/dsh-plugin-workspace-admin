@@ -1,0 +1,5 @@
+# Build/distribution artifacts
+*.tgz
+
+# Dependencies
+node_modules/

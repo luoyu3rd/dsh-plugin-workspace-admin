@@ -1,0 +1,10 @@
+# The dsh-plugin-workspace-admin bundle patch: mounts the model-facing workspace
+# administration tools over the Harness workspace registry.
+#
+# The row references the plugin by PACKAGE NAME, not by file path. That is what
+# lets an installed copy resolve: the Loader resolves module names from the
+# profile directory and its node_modules, which is where `dsh plugin add` puts
+# this package.
+- insert:
+    - id: tool-workspace-admin
+      name: "dsh-plugin-workspace-admin"
