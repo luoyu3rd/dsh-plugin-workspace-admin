@@ -8,7 +8,18 @@ and this project adheres to
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- `README.zh-CN.md` — a Simplified Chinese README, cross-linked with the English
+  one.
+
+### Removed
+
+- `HANDOFF.md` — the session handoff document. It existed to carry context into
+  the next session, and that handoff is complete. Its design rationale lives on
+  in the README and its tool contracts in `src/workspace-tools.js`; the file
+  itself stays reachable in git history at commit `7c0adfe` if it is ever needed
+  again.
 
 ## [0.1.0] - 2026-09-30
 

@@ -1,15 +1,13 @@
 # dsh-plugin-workspace-admin
 
+**English** | [简体中文](README.zh-CN.md)
+
 Model-facing **workspace administration** for DeepSeek Harness: lets an agent
 read and change the Harness workspace list itself, from inside a conversation.
 
 MVP scope is the sidebar's own workspace operations — **add**, **rename**,
 **delete** — plus read-only helpers for browsing workspaces and the sessions
 each one owns.
-
-> **[HANDOFF.md](HANDOFF.md)** carries the full design rationale, the exact tool
-> contracts, the Harness constraints discovered while building this, and the
-> open items. Read it before changing behaviour here.
 
 ## Tools
 
