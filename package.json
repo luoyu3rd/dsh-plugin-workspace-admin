@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-workspace-admin",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Model-facing DeepSeek Harness workspace administration: list workspaces and their sessions, add, rename, and remove workspace entries",
   "keywords": [
     "dsh",

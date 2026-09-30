@@ -8,24 +8,32 @@ and this project adheres to
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.1.1] - 2026-09-30
+
+Licensing, documentation, and language. The tool surface is unchanged: the six
+tool names, their arguments, and the JSON result contract are identical to
+0.1.0.
+
+### Added
+
+- **`LICENSE` — MIT.** `package.json` had declared `"license": "MIT"` since
+  0.1.0 without the file ever shipping.
+- **`CHANGELOG.md`** — this file.
+- **A Simplified Chinese README**, now the default `README.md`. The English text
+  moved to `README.en.md`, and both files carry a language switcher at the top.
+- **npm metadata**: `author`, `repository`, `homepage`, and `bugs`.
+
 ### Changed
 
 - **The plugin's model-facing text is now Simplified Chinese.** Every tool
   description, parameter description, thrown validation message, and
   `presentCall` label is Chinese. Tool names, JSON field names, and enum-like
   values (`reason: 'already registered'`, `identifiedBy: 'id'`, `kind: 'read'`)
-  are deliberately left in English so callers can still match on them.
-- **The default README is now Simplified Chinese.** `README.md` holds the Chinese
-  text, and the English text moved to `README.en.md`; both carry a language
-  switcher at the top.
-
-### Removed
-
-- `HANDOFF.md` — the session handoff document. It existed to carry context into
-  the next session, and that handoff is complete. Its design rationale lives on
-  in the README and its tool contracts in `src/workspace-tools.js`; the file
-  itself stays reachable in git history at commit `7c0adfe` if it is ever needed
-  again.
+  are deliberately left in English so callers can still match on them. The
+  Harness-owned result values (`titleSource`, `origin`, `status`) are still
+  whatever the Harness reports.
 
 ## [0.1.0] - 2026-09-30
 
@@ -79,5 +87,6 @@ Initial release. Six model-facing tools over the Harness workspace registry
   is what lets a `github:` install succeed on the first `add` without a pnpm
   build allowance.
 
-[Unreleased]: https://github.com/luoyu3rd/dsh-plugin-workspace-admin/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/luoyu3rd/dsh-plugin-workspace-admin/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/luoyu3rd/dsh-plugin-workspace-admin/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/luoyu3rd/dsh-plugin-workspace-admin/releases/tag/v0.1.0

@@ -88,7 +88,7 @@ dsh plugin --profile web add dsh-plugin-workspace-admin
 
 # 从本地检出、tarball 或 git 托管
 dsh plugin --profile web add ./dsh-plugin-workspace-admin
-dsh plugin --profile web add ./dsh-plugin-workspace-admin-0.1.0.tgz
+dsh plugin --profile web add ./dsh-plugin-workspace-admin-0.1.1.tgz
 dsh plugin --profile web add github:luoyu3rd/dsh-plugin-workspace-admin
 ```
 
@@ -125,7 +125,7 @@ git 安装拉取的是**源码而非构建产物**，因此不会运行包的 `b
 dsh plugin --profile web add github:luoyu3rd/dsh-plugin-workspace-admin#<full-sha>
 ```
 
-用 `git rev-parse HEAD` 取得 SHA。用 tag 也可以（`...#v0.1.0`），但只有 SHA 是唯一不
+用 `git rev-parse HEAD` 取得 SHA。用 tag 也可以（`...#v0.1.1`），但只有 SHA 是唯一不
 可被移动的形式。
 
 ### 本地开发（绝对路径）
@@ -169,7 +169,7 @@ git tag v0.2.0 && git push --tags
 ### 到 npm
 
 ```sh
-pnpm pack          # → dsh-plugin-workspace-admin-0.1.0.tgz（8 个文件，约 15 KB）
+pnpm pack          # → dsh-plugin-workspace-admin-0.1.1.tgz（8 个文件，约 16 KB）
 npm publish        # 或：npm publish --access public（用于 scoped 名称）
 ```
 

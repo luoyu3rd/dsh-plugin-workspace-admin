@@ -100,7 +100,7 @@ dsh plugin --profile web add dsh-plugin-workspace-admin
 
 # from a checkout, tarball, or git host
 dsh plugin --profile web add ./dsh-plugin-workspace-admin
-dsh plugin --profile web add ./dsh-plugin-workspace-admin-0.1.0.tgz
+dsh plugin --profile web add ./dsh-plugin-workspace-admin-0.1.1.tgz
 dsh plugin --profile web add github:luoyu3rd/dsh-plugin-workspace-admin
 ```
 
@@ -142,7 +142,7 @@ dsh plugin --profile web add github:luoyu3rd/dsh-plugin-workspace-admin#<full-sh
 ```
 
 Get the SHA with `git rev-parse HEAD`. Tags work too
-(`...#v0.1.0`), but a SHA is the only form that cannot be moved.
+(`...#v0.1.1`), but a SHA is the only form that cannot be moved.
 
 ### Local development (absolute path)
 
@@ -187,7 +187,7 @@ the repository to drift from what users run.
 ### To npm
 
 ```sh
-pnpm pack          # → dsh-plugin-workspace-admin-0.1.0.tgz (8 files, ~15 KB)
+pnpm pack          # → dsh-plugin-workspace-admin-0.1.1.tgz (8 files, ~16 KB)
 npm publish        # or: npm publish --access public, for a scoped name
 ```
 
