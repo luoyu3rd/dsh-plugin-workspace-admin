@@ -136,7 +136,7 @@ assert.deepEqual(await tool(definitions, 'workspace_list').execute({}), { total:
 // resolve rejects relative paths before touching the registry
 await assert.rejects(
   () => tool(definitions, 'workspace_resolve').execute({ path: 'relative/path' }),
-  /must be an absolute path/,
+  /必须是绝对路径/,
 )
 
 // resolve on an unregistered but existing directory yields null
@@ -165,7 +165,7 @@ assert.equal(made.workspace.title, 'Nested')
 // ...and refuses when asked not to
 await assert.rejects(
   () => tool(definitions, 'workspace_create').execute({ path: join(scratch, 'missing'), create_directory: false }),
-  /directory does not exist/,
+  /目录不存在/,
 )
 
 // create rejects a path that is a regular file
@@ -173,7 +173,7 @@ const filePath = join(scratch, 'not-a-directory.txt')
 await writeFile(filePath, 'x')
 await assert.rejects(
   () => tool(definitions, 'workspace_create').execute({ path: filePath }),
-  /not a directory/,
+  /不是目录/,
 )
 
 // list reports both entries with status
@@ -198,12 +198,12 @@ assert.equal(byPath.workspace.title, 'By path')
 assert.equal(byPath.identifiedBy, 'path')
 
 // rename validates its arguments
-await assert.rejects(() => tool(definitions, 'workspace_rename').execute({ title: '   ' }), /title must be a non-empty string/)
-await assert.rejects(() => tool(definitions, 'workspace_rename').execute({ title: 'x' }), /supply either id/)
-await assert.rejects(() => tool(definitions, 'workspace_rename').execute({ id: 'nope', title: 'x' }), /unknown workspace id/)
+await assert.rejects(() => tool(definitions, 'workspace_rename').execute({ title: '   ' }), /必须是非空字符串/)
+await assert.rejects(() => tool(definitions, 'workspace_rename').execute({ title: 'x' }), /请提供 id/)
+await assert.rejects(() => tool(definitions, 'workspace_rename').execute({ id: 'nope', title: 'x' }), /未知的工作区 id/)
 await assert.rejects(
   () => tool(definitions, 'workspace_rename').execute({ path: join(scratch, 'nowhere'), title: 'x' }),
-  /no workspace is registered/,
+  /没有为/,
 )
 
 // --- sessions -------------------------------------------------------------
@@ -279,9 +279,9 @@ assert.equal(gone.createdAt, null)
 // argument validation
 await assert.rejects(
   () => tool(definitions, 'workspace_sessions').execute({ id: created.workspace.id, limit: 0 }),
-  /limit must be a positive integer/,
+  /必须是正整数/,
 )
-await assert.rejects(() => tool(definitions, 'workspace_sessions').execute({}), /supply either id/)
+await assert.rejects(() => tool(definitions, 'workspace_sessions').execute({}), /请提供 id/)
 
 // workspace_list inlines sessions only when asked
 const plain = await tool(definitions, 'workspace_list').execute({})
@@ -299,7 +299,7 @@ assert.equal(deleted.workspace.title, 'By path')
 assert.equal((await tool(definitions, 'workspace_list').execute({})).total, 1)
 
 // deleting an unknown id fails informatively
-await assert.rejects(() => tool(definitions, 'workspace_delete').execute({ id: 'ws-999' }), /unknown workspace id/)
+await assert.rejects(() => tool(definitions, 'workspace_delete').execute({ id: 'ws-999' }), /未知的工作区 id/)
 
 // delete by path
 const deletedByPath = await tool(definitions, 'workspace_delete').execute({ path: scratch })

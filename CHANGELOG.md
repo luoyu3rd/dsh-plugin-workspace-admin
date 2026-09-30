@@ -8,10 +8,16 @@ and this project adheres to
 
 ## [Unreleased]
 
-### Added
+### Changed
 
-- `README.zh-CN.md` — a Simplified Chinese README, cross-linked with the English
-  one.
+- **The plugin's model-facing text is now Simplified Chinese.** Every tool
+  description, parameter description, thrown validation message, and
+  `presentCall` label is Chinese. Tool names, JSON field names, and enum-like
+  values (`reason: 'already registered'`, `identifiedBy: 'id'`, `kind: 'read'`)
+  are deliberately left in English so callers can still match on them.
+- **The default README is now Simplified Chinese.** `README.md` holds the Chinese
+  text, and the English text moved to `README.en.md`; both carry a language
+  switcher at the top.
 
 ### Removed
 

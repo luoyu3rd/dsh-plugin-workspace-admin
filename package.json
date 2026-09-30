@@ -29,7 +29,7 @@
     "src/workspace-tools.js",
     "cordis.patch.yml",
     "README.md",
-    "README.zh-CN.md",
+    "README.en.md",
     "CHANGELOG.md",
     "LICENSE"
   ],

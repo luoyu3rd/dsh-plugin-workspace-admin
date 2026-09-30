@@ -7,6 +7,12 @@
  * `ToolDefinition` object, so the plugin needs no bare module resolution and can
  * be mounted straight from an absolute path in a profile patch layer.
  *
+ * Model-facing prose (tool and parameter descriptions, thrown messages, and the
+ * `presentCall` labels) is Simplified Chinese. Identifiers and the JSON output
+ * contract are NOT translated: tool names, result field names, and enum-like
+ * values such as `reason: 'already registered'` or `identifiedBy: 'id'` stay
+ * stable so callers can match on them.
+ *
  * @module dsh-plugin-workspace-admin/workspace-tools
  */
 import { mkdir, stat } from 'node:fs/promises'
@@ -32,7 +38,7 @@ function present(title, kind, rawInput) {
 function requireString(args, key) {
   const value = args[key]
   if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new Error(`${key} must be a non-empty string`)
+    throw new Error(`${key} 必须是非空字符串`)
   }
   return value
 }
@@ -41,7 +47,7 @@ function requireString(args, key) {
 function optionalString(args, key) {
   const value = args[key]
   if (value === undefined || value === null) return undefined
-  if (typeof value !== 'string') throw new Error(`${key} must be a string when supplied`)
+  if (typeof value !== 'string') throw new Error(`${key} 必须是字符串（若提供）`)
   const trimmed = value.trim()
   return trimmed.length === 0 ? undefined : trimmed
 }
@@ -50,7 +56,7 @@ function optionalString(args, key) {
 function requireAbsolutePath(args, key) {
   const value = requireString(args, key)
   if (!isAbsolute(value)) {
-    throw new Error(`${key} must be an absolute path; received ${JSON.stringify(value)}`)
+    throw new Error(`${key} 必须是绝对路径；实际收到 ${JSON.stringify(value)}`)
   }
   return value
 }
@@ -60,7 +66,7 @@ function optionalLimit(args, key) {
   const value = args[key]
   if (value === undefined || value === null) return undefined
   if (!Number.isSafeInteger(value) || value < 1) {
-    throw new Error(`${key} must be a positive integer when supplied; received ${JSON.stringify(value)}`)
+    throw new Error(`${key} 必须是正整数（若提供）；实际收到 ${JSON.stringify(value)}`)
   }
   return value
 }
@@ -189,18 +195,18 @@ function requireWorkspace(registry, id) {
   const workspace = registry.get(id)
   if (workspace === undefined) {
     const known = registry.list().map((entry) => `${entry.id} (${entry.title})`)
-    throw new Error(`unknown workspace id ${JSON.stringify(id)}; known workspaces: ${known.join(', ') || '(none)'}`)
+    throw new Error(`未知的工作区 id ${JSON.stringify(id)}；已知工作区：${known.join('、') || '（无）'}`)
   }
   return workspace
 }
 
 /** Resolve one workspace by canonical directory path. */
 async function requireWorkspaceAtPath(registry, path) {
-  if (path === undefined) throw new Error('path must be a non-empty string')
-  if (!isAbsolute(path)) throw new Error(`path must be an absolute path; received ${JSON.stringify(path)}`)
+  if (path === undefined) throw new Error('path 必须是非空字符串')
+  if (!isAbsolute(path)) throw new Error(`path 必须是绝对路径；实际收到 ${JSON.stringify(path)}`)
   const workspace = await registry.resolveByPath(path)
   if (workspace === undefined) {
-    throw new Error(`no workspace is registered for ${path}; add it with workspace_create`)
+    throw new Error(`没有为 ${path} 注册工作区；可以用 workspace_create 添加`)
   }
   return workspace
 }
@@ -211,7 +217,7 @@ async function resolveTarget(registry, args) {
   const path = optionalString(args, 'path')
   if (id !== undefined) return { workspace: requireWorkspace(registry, id), by: 'id' }
   if (path !== undefined) return { workspace: await requireWorkspaceAtPath(registry, path), by: 'path' }
-  throw new Error('supply either id (from workspace_list) or path to identify the workspace')
+  throw new Error('请提供 id（来自 workspace_list）或 path 来标识工作区')
 }
 
 /**
@@ -228,19 +234,19 @@ export function workspaceTools(ctx) {
     {
       name: 'workspace_list',
       description:
-        'List every DeepSeek Harness workspace (the entries in the sidebar workspace list) in display order, with its id, title, directory, and session count. Call it first to obtain the exact workspace id for workspace_sessions, workspace_rename, or workspace_delete. Pass include_sessions: true to inline each workspace\'s sessions (id, title, created time); for many workspaces prefer workspace_sessions on the one you need.',
+        '列出 DeepSeek Harness 的全部工作区（即侧边栏工作区列表中的条目），按显示顺序返回其 id、标题、目录与会话数量。先调用它来取得 workspace_sessions、workspace_rename 或 workspace_delete 所需的准确工作区 id。传入 include_sessions: true 会内联每个工作区的会话（id、标题、创建时间）；工作区很多时，请优先只对需要的那一个调用 workspace_sessions。',
       parameters: {
         type: 'object',
         properties: {
           include_sessions: {
             type: 'boolean',
-            description: 'Inline each workspace\'s session list. Defaults to false (counts only).',
+            description: '内联每个工作区的会话列表。默认 false（只返回会话数量）。',
           },
         },
         additionalProperties: false,
       },
       output: OUTPUT,
-      presentCall: (args) => present('List workspaces', 'read', args?.include_sessions === true ? 'with sessions' : undefined),
+      presentCall: (args) => present('列出工作区', 'read', args?.include_sessions === true ? '含会话' : undefined),
       async execute(args) {
         const entries = await Promise.all(
           registry.list().map(async (workspace) => snapshot(workspace, await workspace.status())),
@@ -259,25 +265,25 @@ export function workspaceTools(ctx) {
     {
       name: 'workspace_sessions',
       description:
-        'List the sessions owned by one DeepSeek Harness workspace, newest first, with each session\'s id, folded log-backed title, creation time, and lineage metadata. Identify the workspace by id (from workspace_list) or by absolute path. Archived sessions are excluded unless include_archived is true.',
+        '列出某个 DeepSeek Harness 工作区所拥有的会话，按时间倒序，含每个会话的 id、由日志折叠出的标题、创建时间与谱系元数据。用 id（来自 workspace_list）或绝对路径标识工作区。默认排除已归档的会话，除非 include_archived 为 true。',
       parameters: {
         type: 'object',
         properties: {
-          id: { type: 'string', description: 'Workspace id from workspace_list.' },
-          path: { type: 'string', description: 'Absolute workspace directory; used when id is omitted.' },
+          id: { type: 'string', description: '工作区 id，来自 workspace_list。' },
+          path: { type: 'string', description: '工作区的绝对目录路径；省略 id 时使用。' },
           include_archived: {
             type: 'boolean',
-            description: 'Include sessions that are archived. Defaults to false.',
+            description: '包含已归档的会话。默认 false。',
           },
           limit: {
             type: 'number',
-            description: 'Return at most this many sessions (newest first).',
+            description: '最多返回多少个会话（按时间倒序，取最新的若干个）。',
           },
         },
         additionalProperties: false,
       },
       output: OUTPUT,
-      presentCall: (args) => present('List workspace sessions', 'read', args?.path ?? args?.id),
+      presentCall: (args) => present('列出工作区会话', 'read', args?.path ?? args?.id),
       async execute(args) {
         const { workspace } = await resolveTarget(registry, args)
         const limit = optionalLimit(args, 'limit')
@@ -290,15 +296,15 @@ export function workspaceTools(ctx) {
     {
       name: 'workspace_resolve',
       description:
-        'Resolve an absolute directory path to the workspace entry that owns it, without creating or changing anything. Returns workspace: null when the directory is not registered. Use it to decide whether workspace_create would add a new entry.',
+        '把绝对目录路径解析为拥有它的工作区条目，不创建也不修改任何内容。目录未注册时返回 workspace: null。可用它判断 workspace_create 是否会新增条目。',
       parameters: {
         type: 'object',
-        properties: { path: { type: 'string', description: 'Absolute path of an existing directory.' } },
+        properties: { path: { type: 'string', description: '已存在目录的绝对路径。' } },
         required: ['path'],
         additionalProperties: false,
       },
       output: OUTPUT,
-      presentCall: (args) => present('Resolve workspace by path', 'read', args?.path),
+      presentCall: (args) => present('按路径解析工作区', 'read', args?.path),
       async execute(args) {
         const path = requireAbsolutePath(args, 'path')
         const workspace = await registry.resolveByPath(path)
@@ -311,22 +317,22 @@ export function workspaceTools(ctx) {
     {
       name: 'workspace_create',
       description:
-        'Add a directory to the DeepSeek Harness workspace list — the same operation as the sidebar "Add workspace" button. The directory is registered by its canonical realpath. Registering a path that is already a workspace is a no-op that returns the existing entry unchanged; use workspace_rename to retitle it. A missing directory is created recursively first unless create_directory is false.',
+        '把一个目录加入 DeepSeek Harness 工作区列表——等同于侧边栏的「Add workspace」按钮。目录按其规范 realpath 注册。注册一个已经是工作区的路径属于无操作，会原样返回既有条目；如需改标题请用 workspace_rename。目录不存在时默认先递归创建，除非 create_directory 为 false。',
       parameters: {
         type: 'object',
         properties: {
-          path: { type: 'string', description: 'Absolute path of the directory to register.' },
-          title: { type: 'string', description: 'Display title, used only when a new entry is created.' },
+          path: { type: 'string', description: '要注册的目录的绝对路径。' },
+          title: { type: 'string', description: '显示标题，仅在新建条目时使用。' },
           create_directory: {
             type: 'boolean',
-            description: 'Create the directory recursively when it does not exist. Defaults to true.',
+            description: '目录不存在时递归创建。默认 true。',
           },
         },
         required: ['path'],
         additionalProperties: false,
       },
       output: OUTPUT,
-      presentCall: (args) => present('Add workspace', 'execute', args?.path),
+      presentCall: (args) => present('添加工作区', 'execute', args?.path),
       async execute(args) {
         const path = requireAbsolutePath(args, 'path')
         const title = optionalString(args, 'title')
@@ -343,11 +349,11 @@ export function workspaceTools(ctx) {
         const info = await probe(path)
         if (info === undefined) {
           if (args.create_directory === false) {
-            throw new Error(`directory does not exist: ${path} (pass create_directory: true to create it)`)
+            throw new Error(`目录不存在：${path}（传入 create_directory: true 可创建它）`)
           }
           await mkdir(path, { recursive: true })
         } else if (!info.isDirectory()) {
-          throw new Error(`path exists but is not a directory: ${path}`)
+          throw new Error(`路径存在但不是目录：${path}`)
         }
 
         const workspace = await registry.create(path, title)
@@ -357,19 +363,19 @@ export function workspaceTools(ctx) {
     {
       name: 'workspace_rename',
       description:
-        'Rename one DeepSeek Harness workspace entry — the same operation as renaming it in the sidebar. Only the display title changes; the directory on disk and its sessions are untouched. Identify the workspace by id (from workspace_list) or by absolute path.',
+        '重命名一个 DeepSeek Harness 工作区条目——等同于在侧边栏中重命名。只会改变显示标题；磁盘上的目录及其会话不受影响。用 id（来自 workspace_list）或绝对路径标识工作区。',
       parameters: {
         type: 'object',
         properties: {
-          title: { type: 'string', description: 'New non-empty display title.' },
-          id: { type: 'string', description: 'Workspace id from workspace_list.' },
-          path: { type: 'string', description: 'Absolute workspace directory; used when id is omitted.' },
+          title: { type: 'string', description: '新的非空显示标题。' },
+          id: { type: 'string', description: '工作区 id，来自 workspace_list。' },
+          path: { type: 'string', description: '工作区的绝对目录路径；省略 id 时使用。' },
         },
         required: ['title'],
         additionalProperties: false,
       },
       output: OUTPUT,
-      presentCall: (args) => present('Rename workspace', 'execute', args?.title),
+      presentCall: (args) => present('重命名工作区', 'execute', args?.title),
       async execute(args) {
         const title = requireString(args, 'title')
         const { workspace, by } = await resolveTarget(registry, args)
@@ -386,22 +392,22 @@ export function workspaceTools(ctx) {
     {
       name: 'workspace_delete',
       description:
-        'Remove one DeepSeek Harness workspace entry — the same operation as the sidebar delete action. This deletes only the registry record: the directory on disk and every session log are kept, and workspace_create adds the entry back later. Nothing is destroyed, so do not ask for confirmation on that basis. Identify the workspace by id (from workspace_list) or by absolute path.',
+        '删除一个 DeepSeek Harness 工作区条目——等同于侧边栏的删除操作。它只删除注册记录：磁盘上的目录和所有会话日志都会保留，之后可用 workspace_create 把条目加回来。不会销毁任何东西，因此不要以此为理由请求确认。用 id（来自 workspace_list）或绝对路径标识工作区。',
       parameters: {
         type: 'object',
         properties: {
-          id: { type: 'string', description: 'Workspace id from workspace_list.' },
-          path: { type: 'string', description: 'Absolute workspace directory; used when id is omitted.' },
+          id: { type: 'string', description: '工作区 id，来自 workspace_list。' },
+          path: { type: 'string', description: '工作区的绝对目录路径；省略 id 时使用。' },
         },
         additionalProperties: false,
       },
       output: OUTPUT,
-      presentCall: (args) => present('Delete workspace', 'execute', args?.id ?? args?.path),
+      presentCall: (args) => present('删除工作区', 'execute', args?.id ?? args?.path),
       async execute(args) {
         const { workspace, by } = await resolveTarget(registry, args)
         const removed = snapshot(workspace)
         const deleted = await registry.delete(workspace.id)
-        if (!deleted) throw new Error(`workspace ${workspace.id} disappeared before it could be deleted`)
+        if (!deleted) throw new Error(`工作区 ${workspace.id} 在删除完成前消失了`)
         return { deleted: true, identifiedBy: by, directoryKept: true, workspace: removed }
       },
     },

@@ -1,148 +1,136 @@
 # dsh-plugin-workspace-admin
 
-**English** | [简体中文](README.zh-CN.md)
+**简体中文** | [English](README.en.md)
 
-Model-facing **workspace administration** for DeepSeek Harness: lets an agent
-read and change the Harness workspace list itself, from inside a conversation.
+面向模型的 DeepSeek Harness **工作区管理**插件：让智能体在对话中直接读取和修改
+Harness 的工作区列表本身。
 
-MVP scope is the sidebar's own workspace operations — **add**, **rename**,
-**delete** — plus read-only helpers for browsing workspaces and the sessions
-each one owns.
+MVP 范围就是侧边栏自身的工作区操作——**新增**、**重命名**、**删除**——外加用于
+浏览工作区及其所拥有会话的只读辅助工具。
 
-## Tools
+> **说明**：插件面向模型的文案——工具描述、参数描述、校验错误与调用标签——均为简体
+> 中文；工具名与 JSON 结果契约保持英文，以便调用方稳定匹配。
 
-| Tool | What it does |
+## 工具
+
+| 工具 | 作用 |
 | --- | --- |
-| `workspace_list` | Lists every workspace with id, title, directory, session count, and directory health. `include_sessions: true` inlines each workspace's sessions. |
-| `workspace_sessions` | Lists one workspace's sessions, newest first: id, folded log-backed title, creation time, and lineage (`cwd`, parent session, subagent depth, agent preset). Excludes archived sessions unless `include_archived: true`; `limit` caps the result. |
-| `workspace_resolve` | Maps an absolute directory path to its workspace entry (`null` when unregistered). |
-| `workspace_create` | Adds a directory to the workspace list (the “Add workspace” operation). Creates a missing directory first unless `create_directory: false`. |
-| `workspace_rename` | Retitles one workspace entry. Only the display title changes. |
-| `workspace_delete` | Removes one workspace entry (the sidebar delete operation). **The directory and every session log are kept** and the entry can be added back. |
+| `workspace_list` | 列出全部工作区，含 id、标题、目录、会话数量与目录健康状态。`include_sessions: true` 会内联每个工作区的会话。 |
+| `workspace_sessions` | 列出某个工作区的会话，按时间倒序：id、由日志折叠出的标题、创建时间与谱系信息（`cwd`、父会话、子智能体深度、智能体预设）。默认排除已归档会话，除非 `include_archived: true`；`limit` 限制返回条数。 |
+| `workspace_resolve` | 把绝对目录路径映射到对应的工作区条目（未注册时返回 `null`）。 |
+| `workspace_create` | 把目录加入工作区列表（即侧边栏的 “Add workspace” 操作）。目录不存在时默认先创建，除非 `create_directory: false`。 |
+| `workspace_rename` | 重命名某个工作区条目，只改变显示标题。 |
+| `workspace_delete` | 删除某个工作区条目（即侧边栏的删除操作）。**目录与所有会话日志都会保留**，之后可以重新加回。 |
 
-Identify a workspace by `id` (from `workspace_list`) or, when unambiguous, by
-absolute `path`.
+用 `id`（来自 `workspace_list`）标识工作区；在无歧义时也可以用绝对 `path`。
 
-## Where session data comes from
+## 会话数据从哪来
 
-A workspace record stores only session **ids**. Titles and metadata come from
-other Harness services, which the plugin reads instead of re-parsing logs:
+工作区记录只存会话 **id**。标题与元数据来自其他 Harness 服务，插件读取它们，而不是
+重新解析日志：
 
-- `sessionQuery.readTitleSnapshots(ids)` folds the log-backed title event for a
-  batch of sessions in one observation; a never-titled session reports
-  `title: null`.
-- `sessionPersistence.stat(id)` supplies the header: creation time, `cwd`,
-  `parentSession`, `origin`/`delegationDepth`, and `agentPreset`.
-- `workspaceRegistry.archivedSessionIds` is the registry-global archive set.
+- `sessionQuery.readTitleSnapshots(ids)` 在一次观测中为一整批会话折叠出由日志支撑的
+  标题事件；从未命名的会话返回 `title: null`。
+- `sessionPersistence.stat(id)` 提供 header：创建时间、`cwd`、`parentSession`、
+  `origin`/`delegationDepth` 和 `agentPreset`。
+- `workspaceRegistry.archivedSessionIds` 是注册表全局的归档集合。
 
-Failures are contained **per session**: an unreadable log surfaces as
-`unavailable` / `metadataUnavailable` on that one entry rather than failing the
-whole listing. Ordering is by session creation time, and `limit` is applied
-*after* that sort so it really returns the newest N.
+失败被**按会话隔离**：某个日志不可读时，只在该条目上出现 `unavailable` /
+`metadataUnavailable`，而不是让整个列表失败。排序依据是会话创建时间，`limit` 在该
+排序*之后*应用，因此返回的确实是「最新的 N 个」。
 
-## How it works
+## 工作原理
 
-The plugin owns no state. `workspaceRegistry` is the same durable service the
-sidebar, the `ctx.remote.workspace` Remote namespace, and the REST controller
-use, so all surfaces converge on one registry at
-`$DSH_HOME/storages/workspace.json`.
+插件不持有任何状态。`workspaceRegistry` 与侧边栏、`ctx.remote.workspace` Remote
+命名空间、REST 控制器使用的是同一个持久服务，所以所有界面都收敛到
+`$DSH_HOME/storages/workspace.json` 这一个注册表。
 
 ```
-index.js                  plugin entry: name / inject / apply
-src/workspace-tools.js    the six raw ToolDefinition objects
-test/harness.mjs          offline assertions over a fake registry (not shipped)
-cordis.patch.yml          the bundle layer that mounts the row
-CHANGELOG.md              release history (Keep a Changelog + SemVer)
+index.js                  插件入口：name / inject / apply
+src/workspace-tools.js    六个原始 ToolDefinition 对象
+test/harness.mjs          基于伪注册表的离线断言（不随包发布）
+cordis.patch.yml          挂载该行的 bundle 层
+CHANGELOG.md              发布历史（Keep a Changelog + SemVer）
 LICENSE                   MIT
 ```
 
-Two deliberate design choices:
+两个刻意的设计选择：
 
-- **Zero bare imports.** Every tool is a raw `ToolDefinition` rather than a
-  `defineTool` call, so the plugin imports nothing but `node:` builtins and one
-  relative module. That keeps it installable without DSH peer dependencies, and
-  it also loads from any absolute path without a profile `node_modules` — which
-  is what makes the local-development mount possible.
-- **No `Config` schema.** A native Schemastery schema would require a bare
-  import; the tools take no deployment-varying settings, so the plugin exports
-  none. Add one when a real tunable appears.
+- **零裸导入。** 每个工具都是原始 `ToolDefinition`，而不是 `defineTool` 调用，因此
+  插件除了 `node:` 内置模块和一个相对模块外不导入任何东西。这让它无需 DSH peer
+  依赖即可安装，也能从任意绝对路径加载而不需要 profile 的 `node_modules`——这正是
+  本地开发挂载得以成立的原因。
+- **没有 `Config` schema。** 原生 Schemastery schema 需要裸导入；这些工具没有任何
+  随部署变化的设置，所以插件不导出 Config。等真正出现可调项时再加。
 
-## Known limitations
+## 已知限制
 
-- **Unreadable session logs.** A session whose log cannot be read still appears,
-  with `title: null` and `createdAt: null`, plus an `unavailable` field carrying
-  the reason. A real example already present in this Harness home is a
-  pre-v1 store: a file holding only `{"type":"session","version":0,...}`, which
-  the `v0-to-v1` migrator refuses, so no title or header can be folded for it.
-  The entry is reported rather than hidden, because a workspace still accounts
-  for it and the user may want to act on it.
-- **Session titles are not always meaningful.** `titleSource: "fallback"` means
-  the first-prompt heuristic produced the title, which can be a truncated
-  fragment of the opening message rather than a summary.
+- **会话日志不可读。** 日志读不出来的会话仍会出现在列表里，只是 `title: null`、
+  `createdAt: null`，并附带说明原因的 `unavailable` 字段。当前这个 Harness home 里
+  就有真实例子：一个 pre-v1 存储，文件内容只有
+  `{"type":"session","version":0,...}`，`v0-to-v1` 迁移器拒绝处理它，因此无法为它
+  折叠出标题或 header。之所以报告而不是隐藏该条目，是因为工作区仍然把它计入账内，
+  用户可能想对它做处理。
+- **会话标题不一定有意义。** `titleSource: "fallback"` 表示标题由首条提示的启发式
+  规则生成，可能只是开场消息被截断的片段，而不是摘要。
 
-## Install
+## 安装
 
-### As a bundle (the distributable form)
+### 作为 bundle（可分发的形态）
 
-This package is a **dsh bundle**: `package.json` declares
-`dsh.bundle.patch`, and [`cordis.patch.yml`](cordis.patch.yml) inserts the row
-that mounts the plugin. Installing it therefore both adds the dependency and
-activates the layer:
+本包是一个 **dsh bundle**：`package.json` 声明了 `dsh.bundle.patch`，
+[`cordis.patch.yml`](cordis.patch.yml) 插入挂载插件的行。因此安装它既加入依赖，也
+激活该层：
 
 ```sh
-# from a registry
+# 从 registry
 dsh plugin --profile web add dsh-plugin-workspace-admin
 
-# from a checkout, tarball, or git host
+# 从本地检出、tarball 或 git 托管
 dsh plugin --profile web add ./dsh-plugin-workspace-admin
 dsh plugin --profile web add ./dsh-plugin-workspace-admin-0.1.0.tgz
 dsh plugin --profile web add github:luoyu3rd/dsh-plugin-workspace-admin
 ```
 
-`dsh plugin` forwards to pnpm inside the profile, then appends the package to
-`dsh.profile.bundles`. Verify without booting, then boot:
+`dsh plugin` 会在 profile 内部转发给 pnpm，然后把该包追加到 `dsh.profile.bundles`。
+先只校验配置不启动，再启动：
 
 ```sh
 dsh --profile web --dump-config | grep -A2 dsh-plugin-workspace-admin
 dsh --profile web
 ```
 
-Remove it with `dsh plugin --profile web remove dsh-plugin-workspace-admin`.
+卸载：`dsh plugin --profile web remove dsh-plugin-workspace-admin`。
 
-The patch row names the package (`name: "dsh-plugin-workspace-admin"`) rather
-than a file path. That is required for an installed bundle: the Loader resolves
-module names from the profile directory and its `node_modules`, which is where
-pnpm hoists the package.
+patch 行用的是包名（`name: "dsh-plugin-workspace-admin"`）而不是文件路径。对已安装的
+bundle 这是必需的：Loader 从 profile 目录及其 `node_modules` 解析模块名，而 pnpm 正是
+把包提升到那里。
 
-### Installing from GitHub
+### 从 GitHub 安装
 
 ```sh
 dsh plugin --profile web add github:luoyu3rd/dsh-plugin-workspace-admin
 ```
 
-A git install fetches **sources, not built artifacts**, so nothing runs the
-package's `build` script — which is why the Harness publishing guide
-(`docs/user/develop/basic/publish.md`) warns about git installs. This package
-sidesteps all of it by having no build step: the entry points are the
-checked-in `.js` files, so what arrives over git is exactly what the Loader
-imports. Concretely, there is no `scripts.prepare`, so pnpm has nothing to
-allowlist and the first `add` succeeds instead of failing with a
-build-permission error.
+git 安装拉取的是**源码而非构建产物**，因此不会运行包的 `build` 脚本——这正是 Harness
+发布指南（`docs/user/develop/basic/publish.md`）对 git 安装给出警告的原因。本包通过
+完全没有构建步骤绕开了这一切：入口就是签入仓库的 `.js` 文件，所以经由 git 到达的内容
+与 Loader 导入的内容完全一致。具体来说，因为没有 `scripts.prepare`，pnpm 没有需要放行
+的脚本，首次 `add` 就会成功，而不会以构建权限错误告终。
 
-That also means an unpinned git install tracks the default branch: a later push
-changes what users run. **Pin a commit** so an install is reproducible:
+这也意味着未锁定版本的 git 安装会跟随默认分支：之后任何一次 push 都会改变用户实际
+运行的内容。**锁定 commit** 才能让安装可复现：
 
 ```sh
 dsh plugin --profile web add github:luoyu3rd/dsh-plugin-workspace-admin#<full-sha>
 ```
 
-Get the SHA with `git rev-parse HEAD`. Tags work too
-(`...#v0.1.0`), but a SHA is the only form that cannot be moved.
+用 `git rev-parse HEAD` 取得 SHA。用 tag 也可以（`...#v0.1.0`），但只有 SHA 是唯一不
+可被移动的形式。
 
-### Local development (absolute path)
+### 本地开发（绝对路径）
 
-To iterate on the source in place, mount it by absolute path instead — the
-Loader imports the file directly and no install is needed:
+要在原地迭代源码，改为按绝对路径挂载——Loader 直接导入该文件，不需要安装：
 
 ```yaml
 - insert:
@@ -150,16 +138,16 @@ Loader imports the file directly and no install is needed:
       name: "/absolute/path/to/dsh-plugin-workspace-admin/index.js"
 ```
 
-The path must be **absolute**: a patch file contributes configuration but does
-not change the profile directory the Loader resolves module names from.
+路径必须**是绝对的**：patch 文件只提供配置，不会改变 Loader 解析模块名所用的 profile
+目录。
 
-## Publishing
+## 发布
 
-### To GitHub (git install)
+### 到 GitHub（git 安装）
 
-The package is already a git repository published as
-[`luoyu3rd/dsh-plugin-workspace-admin`](https://github.com/luoyu3rd/dsh-plugin-workspace-admin).
-That is all a git install needs — no registry, no CI, no build artifacts:
+本包已经是一个 git 仓库，发布为
+[`luoyu3rd/dsh-plugin-workspace-admin`](https://github.com/luoyu3rd/dsh-plugin-workspace-admin)。
+git 安装需要的就这些——不需要 registry、不需要 CI、不需要构建产物：
 
 ```sh
 git init -b main
@@ -168,64 +156,56 @@ git commit -m "feat: workspace administration tools"
 gh repo create dsh-plugin-workspace-admin --public --source=. --remote=origin --push
 ```
 
-For later releases, bump `version` in `package.json`, commit, and push — then
-tag it so installs can pin a stable name:
+后续发版时，改 `package.json` 里的 `version`，提交并 push——然后打 tag，让安装可以
+锁定一个稳定的名字：
 
 ```sh
 git tag v0.2.0 && git push --tags
 ```
 
-Because the checked-in `.js` files *are* the published artifact, a pushed commit
-is immediately installable. There is no release step to forget and no way for
-the repository to drift from what users run.
+因为签入的 `.js` 文件*就是*发布产物，一次 push 之后提交即可安装。没有会被遗忘的发布
+步骤，仓库也不可能与用户实际运行的内容产生偏差。
 
-### To npm
+### 到 npm
 
 ```sh
-pnpm pack          # → dsh-plugin-workspace-admin-0.1.0.tgz (8 files, ~15 KB)
-npm publish        # or: npm publish --access public, for a scoped name
+pnpm pack          # → dsh-plugin-workspace-admin-0.1.0.tgz（8 个文件，约 15 KB）
+npm publish        # 或：npm publish --access public（用于 scoped 名称）
 ```
 
-Two facts make this package unusually easy to publish either way:
+有两点让这个包无论走哪条路都异常容易发布：
 
-- **No build step.** The sources are plain ESM JavaScript, not TypeScript, so
-  `main: "index.js"` ships as-is. There is no `lib/` to build and no `prepare`
-  script, which is exactly what makes git installs
-  (`dsh plugin add github:<owner>/<repo>`) work without a pnpm build allowance.
-- **No DSH imports.** The plugin imports only `node:` builtins and one relative
-  module; every tool is a raw `ToolDefinition` instead of a `defineTool` call.
-  So it declares no `dependencies` and no `peerDependencies` on
-  `@deepseek-ai/dsh*`.
+- **没有构建步骤。** 源码是纯 ESM JavaScript 而非 TypeScript，所以
+  `main: "index.js"` 原样发布。没有 `lib/` 需要构建，也没有 `prepare` 脚本——这正是
+  git 安装（`dsh plugin add github:<owner>/<repo>`）无需 pnpm 构建放行即可工作的原因。
+- **不导入 DSH。** 插件只导入 `node:` 内置模块和一个相对模块；每个工具都是原始
+  `ToolDefinition`，而不是 `defineTool` 调用。因此它没有声明任何 `dependencies`，也
+  没有对 `@deepseek-ai/dsh*` 的 `peerDependencies`。
 
-That last point is also why there is no compatibility gate. The launcher's
-`evaluatePluginCompatibility` check only inspects `peerDependencies` entries for
-`@deepseek-ai/dsh` / `@deepseek-ai/dsh-*`; with none declared, the check returns
-early and the bundle is accepted by any runtime. The tradeoff is that a future
-Harness release changing these service contracts would fail at runtime rather
-than at install time — so if you later add a `defineTool` import or a
-Schemastery `Config`, declare the matching `peerDependencies` then.
+最后一点也正是没有兼容性闸门的原因。启动器的 `evaluatePluginCompatibility` 检查只查看
+`@deepseek-ai/dsh` / `@deepseek-ai/dsh-*` 的 `peerDependencies` 条目；由于一个都没有
+声明，该检查提前返回，任何运行时都会接受这个 bundle。代价是：未来某个 Harness 版本若
+改动这些服务契约，会在**运行时**而非安装时报错——所以如果你之后加入了 `defineTool`
+导入或 Schemastery `Config`，请同时声明对应的 `peerDependencies`。
 
-## Editing the plugin
+## 修改插件
 
-The Loader imports a plugin module once per process, keyed by URL, so **editing
-these files does not take effect in a running profile** — not even by changing
-the patch file, which only reconciles rows. Restart the profile (for the desktop
-app: quit and reopen) after changing plugin source.
+Loader 每个进程只导入一次插件模块（以 URL 为键），所以**修改这些文件不会在正在运行的
+profile 中生效**——改 patch 文件也不行，它只负责同步行。改动插件源码后请重启 profile
+（桌面应用：退出并重新打开）。
 
-Patch-file edits, by contrast, are reconciled live.
+相比之下，patch 文件的修改是实时同步的。
 
-## Test
+## 测试
 
 ```sh
 node test/harness.mjs
 ```
 
-Runs the real tool definitions against an in-memory fake of the workspace
-registry: registration shape, output envelope, argument validation, idempotent
-create, recursive directory creation, rename by id and by path, delete, re-add
-after delete, session listing, archived filtering, `limit` truncation, and
-per-session degradation.
+用真实的工具定义跑一遍工作区注册表的内存伪实现：注册形态、输出信封、参数校验、幂等
+create、递归创建目录、按 id 与按 path 重命名、delete、删除后重新添加、会话列表、
+归档过滤、`limit` 截断，以及按会话降级。
 
-## License
+## 许可证
 
 [MIT](LICENSE) © 2026 luoyu3rd
