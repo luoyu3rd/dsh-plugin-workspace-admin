@@ -92,7 +92,7 @@ dsh plugin --profile web add dsh-plugin-workspace-admin
 # from a checkout, tarball, or git host
 dsh plugin --profile web add ./dsh-plugin-workspace-admin
 dsh plugin --profile web add ./dsh-plugin-workspace-admin-0.1.0.tgz
-dsh plugin --profile web add github:you/dsh-plugin-workspace-admin
+dsh plugin --profile web add github:luoyu3rd/dsh-plugin-workspace-admin
 ```
 
 `dsh plugin` forwards to pnpm inside the profile, then appends the package to
@@ -110,6 +110,31 @@ than a file path. That is required for an installed bundle: the Loader resolves
 module names from the profile directory and its `node_modules`, which is where
 pnpm hoists the package.
 
+### Installing from GitHub
+
+```sh
+dsh plugin --profile web add github:luoyu3rd/dsh-plugin-workspace-admin
+```
+
+A git install fetches **sources, not built artifacts**, so nothing runs the
+package's `build` script — which is why the Harness publishing guide
+(`docs/user/develop/basic/publish.md`) warns about git installs. This package
+sidesteps all of it by having no build step: the entry points are the
+checked-in `.js` files, so what arrives over git is exactly what the Loader
+imports. Concretely, there is no `scripts.prepare`, so pnpm has nothing to
+allowlist and the first `add` succeeds instead of failing with a
+build-permission error.
+
+That also means an unpinned git install tracks the default branch: a later push
+changes what users run. **Pin a commit** so an install is reproducible:
+
+```sh
+dsh plugin --profile web add github:luoyu3rd/dsh-plugin-workspace-admin#<full-sha>
+```
+
+Get the SHA with `git rev-parse HEAD`. Tags work too
+(`...#v0.1.0`), but a SHA is the only form that cannot be moved.
+
 ### Local development (absolute path)
 
 To iterate on the source in place, mount it by absolute path instead — the
@@ -126,17 +151,43 @@ not change the profile directory the Loader resolves module names from.
 
 ## Publishing
 
+### To GitHub (git install)
+
+The package is already a git repository published as
+[`luoyu3rd/dsh-plugin-workspace-admin`](https://github.com/luoyu3rd/dsh-plugin-workspace-admin).
+That is all a git install needs — no registry, no CI, no build artifacts:
+
+```sh
+git init -b main
+git add -A
+git commit -m "feat: workspace administration tools"
+gh repo create dsh-plugin-workspace-admin --public --source=. --remote=origin --push
+```
+
+For later releases, bump `version` in `package.json`, commit, and push — then
+tag it so installs can pin a stable name:
+
+```sh
+git tag v0.2.0 && git push --tags
+```
+
+Because the checked-in `.js` files *are* the published artifact, a pushed commit
+is immediately installable. There is no release step to forget and no way for
+the repository to drift from what users run.
+
+### To npm
+
 ```sh
 pnpm pack          # → dsh-plugin-workspace-admin-0.1.0.tgz (5 files, ~8 KB)
 npm publish        # or: npm publish --access public, for a scoped name
 ```
 
-Two facts make this package unusually easy to publish:
+Two facts make this package unusually easy to publish either way:
 
 - **No build step.** The sources are plain ESM JavaScript, not TypeScript, so
   `main: "index.js"` ships as-is. There is no `lib/` to build and no `prepare`
   script, which is exactly what makes git installs
-  (`dsh plugin add github:you/...`) work without a pnpm build allowance.
+  (`dsh plugin add github:<owner>/<repo>`) work without a pnpm build allowance.
 - **No DSH imports.** The plugin imports only `node:` builtins and one relative
   module; every tool is a raw `ToolDefinition` instead of a `defineTool` call.
   So it declares no `dependencies` and no `peerDependencies` on
